@@ -59,7 +59,6 @@ export default function Finanzas() {
     fetchMovimientos();
   }
 
-  // Cálculos
   const cajaTotal = movimientos.reduce((acc, m) => {
     const signo = m.tipo === "recaudo" ? 1 : -1;
     return acc + signo * Number(m.monto);
@@ -82,7 +81,6 @@ export default function Finanzas() {
       <h1 className="text-2xl font-bold text-gray-800 mb-1">Finanzas</h1>
       <p className="text-gray-500 mb-6">Caja única, separación virtual por negocio</p>
 
-      {/* Resumen */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
           <p className="text-sm text-gray-500">Caja Total (efectivo real)</p>
@@ -96,7 +94,6 @@ export default function Finanzas() {
         ))}
       </div>
 
-      {/* Formulario */}
       <div className="bg-white rounded-xl shadow p-4 mb-6 space-y-3">
         <div className="flex gap-2 flex-wrap">
           {TIPOS.map((t) => (
@@ -151,7 +148,6 @@ export default function Finanzas() {
         </div>
       </div>
 
-      {/* Historial */}
       {loading ? (
         <p className="text-gray-500">Cargando movimientos...</p>
       ) : (

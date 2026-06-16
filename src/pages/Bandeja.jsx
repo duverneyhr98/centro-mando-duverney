@@ -73,11 +73,10 @@ export default function Bandeja() {
     } else if (tipo === "retiro") {
       await supabase.from("transacciones_financieras").insert([{
         tipo: "gasto",
-        concepto: campos.titulo,
+        descripcion: campos.titulo,
         monto: campos.monto ? parseFloat(campos.monto) : 0,
         negocio_id: campos.negocio_id || null,
         categoria: "Retiro de caja",
-        fecha: new Date().toISOString().split("T")[0],
       }]);
     }
 
