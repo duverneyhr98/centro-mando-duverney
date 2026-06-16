@@ -71,11 +71,15 @@ export default function Bandeja() {
         estado: "pendiente",
       }]);
     } else if (tipo === "retiro") {
+      if (!campos.negocio_id || !campos.monto) {
+        alert("Debes indicar el monto y el negocio del que salió la plata.");
+        return;
+      }
       await supabase.from("transacciones_financieras").insert([{
         tipo: "gasto",
         descripcion: campos.titulo,
-        monto: campos.monto ? parseFloat(campos.monto) : 0,
-        negocio_id: campos.negocio_id || null,
+        monto: parseFloat(campos.monto),
+        negocio_id: campos.negocio_id,
         categoria: "Retiro de caja",
       }]);
     }
