@@ -70,6 +70,15 @@ export default function Bandeja() {
         negocio_id: campos.negocio_id || null,
         estado: "pendiente",
       }]);
+    } else if (tipo === "retiro") {
+      await supabase.from("transacciones_financieras").insert([{
+        tipo: "gasto",
+        concepto: campos.titulo,
+        monto: campos.monto ? parseFloat(campos.monto) : 0,
+        negocio_id: campos.negocio_id || null,
+        categoria: "Retiro de caja",
+        fecha: new Date().toISOString().split("T")[0],
+      }]);
     }
 
     await supabase.from("bandeja").delete().eq("id", item.id);
@@ -99,8 +108,8 @@ export default function Bandeja() {
                 <div className="space-y-3">
                   <p className="font-medium text-gray-800">{item.texto}</p>
 
-                  <div className="flex gap-2">
-                    {["idea", "tarea", "recordatorio"].map((t) => (
+                  <div className="flex gap-2 flex-wrap">
+                    {["idea", "tarea", "recordatorio", "retiro"].map((t) => (
                       <button
                         key={t}
                         onClick={() => setTipo(t)}
@@ -108,7 +117,7 @@ export default function Bandeja() {
                           tipo === t ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {t}
+                        {t === "retiro" ? "Retiro de caja" : t}
                       </button>
                     ))}
                   </div>
@@ -173,6 +182,19 @@ export default function Bandeja() {
                           className="border rounded-lg px-3 py-2 flex-1"
                         />
                       </div>
+                    </div>
+                  )}
+
+                  {tipo === "retiro" && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">¿Cuánto sacaste y de qué negocio?</p>
+                      <input
+                        type="number"
+                        placeholder="Monto retirado"
+                        value={campos.monto}
+                        onChange={(e) => setCampos({ ...campos, monto: e.target.value })}
+                        className="w-full border rounded-lg px-3 py-2"
+                      />
                     </div>
                   )}
 
