@@ -153,28 +153,28 @@ export default function Finanzas() {
       ) : (
         <div className="space-y-2">
           {movimientos.map((m) => (
-            <div key={m.id} className="bg-white rounded-xl shadow p-4 flex items-center justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
-                    m.tipo === "recaudo" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                  }`}>
-                    {m.tipo === "recaudo" ? "Recaudo" : "Gasto"}
-                  </span>
-                  <span className="text-xs text-gray-400">{m.negocios?.nombre || "Personal"}</span>
-                  <span className="text-xs text-gray-400">{new Date(m.created_at).toLocaleDateString("es-CO")}</span>
-                </div>
-                <p className="text-sm text-gray-700 truncate">{m.descripcion || "-"}</p>
-                <p className={`font-semibold ${m.tipo === "recaudo" ? "text-green-600" : "text-red-600"}`}>
+            <div key={m.id} className="bg-white rounded-xl shadow p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  m.tipo === "recaudo" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                }`}>
+                  {m.tipo === "recaudo" ? "Recaudo" : "Gasto"}
+                </span>
+                <span className="text-xs text-gray-400">{new Date(m.created_at).toLocaleDateString("es-CO")}</span>
+              </div>
+              <p className="text-sm text-gray-500 mb-1">{m.negocios?.nombre || "Personal"}</p>
+              <p className="text-sm text-gray-700 mb-2">{m.descripcion || "-"}</p>
+              <div className="flex items-center justify-between">
+                <p className={`font-bold text-lg ${m.tipo === "recaudo" ? "text-green-600" : "text-red-600"}`}>
                   {m.tipo === "recaudo" ? "+" : "-"}{formatoCOP(m.monto)}
                 </p>
+                <button
+                  onClick={() => eliminarMovimiento(m.id)}
+                  className="text-red-500 text-sm hover:underline"
+                >
+                  Eliminar
+                </button>
               </div>
-              <button
-                onClick={() => eliminarMovimiento(m.id)}
-                className="text-red-500 text-xs hover:underline shrink-0"
-              >
-                Eliminar
-              </button>
             </div>
           ))}
         </div>
