@@ -113,11 +113,11 @@ export default function Finanzas() {
           ))}
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-col gap-2">
           <select
             value={negocioId}
             onChange={(e) => setNegocioId(e.target.value)}
-            className="border rounded-lg px-3 py-2"
+            className="border rounded-lg px-3 py-2 w-full"
           >
             <option value="">Selecciona negocio...</option>
             {negocios.map((n) => (
@@ -129,19 +129,19 @@ export default function Finanzas() {
             placeholder="Monto"
             value={monto}
             onChange={(e) => setMonto(e.target.value)}
-            className="border rounded-lg px-3 py-2 w-40"
+            className="border rounded-lg px-3 py-2 w-full"
           />
           <input
             type="text"
             placeholder="Descripción (opcional)"
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
-            className="border rounded-lg px-3 py-2 flex-1"
+            className="border rounded-lg px-3 py-2 w-full"
           />
           <button
             onClick={agregarMovimiento}
             disabled={enviando}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 w-full"
           >
             Registrar
           </button>
@@ -151,45 +151,32 @@ export default function Finanzas() {
       {loading ? (
         <p className="text-gray-500">Cargando movimientos...</p>
       ) : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-left">
-              <tr>
-                <th className="p-3">Fecha</th>
-                <th className="p-3">Tipo</th>
-                <th className="p-3">Negocio</th>
-                <th className="p-3">Descripción</th>
-                <th className="p-3 text-right">Monto</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {movimientos.map((m) => (
-                <tr key={m.id} className="border-t">
-                  <td className="p-3">{new Date(m.created_at).toLocaleDateString("es-CO")}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      m.tipo === "recaudo" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                    }`}>
-                      {m.tipo === "recaudo" ? "Recaudo" : "Gasto"}
-                    </span>
-                  </td>
-                  <td className="p-3">{m.negocios?.nombre || "-"}</td>
-                  <td className="p-3">{m.descripcion || "-"}</td>
-                  <td className={`p-3 text-right font-medium ${
-                    m.tipo === "recaudo" ? "text-green-600" : "text-red-600"
+        <div className="space-y-2">
+          {movimientos.map((m) => (
+            <div key={m.id} className="bg-white rounded-xl shadow p-4 flex items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                    m.tipo === "recaudo" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                   }`}>
-                    {m.tipo === "recaudo" ? "+" : "-"}{formatoCOP(m.monto)}
-                  </td>
-                  <td className="p-3 text-right">
-                    <button onClick={() => eliminarMovimiento(m.id)} className="text-red-500 text-xs hover:underline">
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {m.tipo === "recaudo" ? "Recaudo" : "Gasto"}
+                  </span>
+                  <span className="text-xs text-gray-400">{m.negocios?.nombre || "Personal"}</span>
+                  <span className="text-xs text-gray-400">{new Date(m.created_at).toLocaleDateString("es-CO")}</span>
+                </div>
+                <p className="text-sm text-gray-700 truncate">{m.descripcion || "-"}</p>
+                <p className={`font-semibold ${m.tipo === "recaudo" ? "text-green-600" : "text-red-600"}`}>
+                  {m.tipo === "recaudo" ? "+" : "-"}{formatoCOP(m.monto)}
+                </p>
+              </div>
+              <button
+                onClick={() => eliminarMovimiento(m.id)}
+                className="text-red-500 text-xs hover:underline shrink-0"
+              >
+                Eliminar
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
