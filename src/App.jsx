@@ -7,6 +7,7 @@ import Ideas from "./pages/Ideas";
 import Finanzas from "./pages/Finanzas";
 import Recordatorios from "./pages/Recordatorios";
 import Bandeja from "./pages/Bandeja";
+import Deudas from "./pages/Deudas";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="finanzas" element={<Finanzas />} />
         <Route path="recordatorios" element={<Recordatorios />} />
         <Route path="bandeja" element={<Bandeja />} />
+        <Route path="deudas" element={<Deudas />} />
       </Route>
     </Routes>
   );
