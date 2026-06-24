@@ -11,6 +11,8 @@ export default function Deudas() {
   const [concepto, setConcepto] = useState("");
   const [fecha, setFecha] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [abonando, setAbonando] = useState(null);
+  const [montoAbono, setMontoAbono] = useState("");
 
   useEffect(() => {
     fetchDeudas();
@@ -65,20 +67,30 @@ export default function Deudas() {
     setEnviando(false);
   }
 
-  async function marcarPagado(id) {
-    const deuda = deudas.find(d => d.id === id);
-    await supabase.from("deudas").update({ estado: "pagado", monto_pagado: deuda?.monto }).eq("id", id);
+  async function confirmarAbono(deuda) {
+    const abono = parseFloat(montoAbono);
+    if (!abono || abono <= 0) return;
 
-    if (deuda) {
-      await supabase.from("transacciones_financieras").insert([{
-        tipo: "recaudo",
-        descripcion: `Pago de deuda: ${deuda.concepto || "retiro personal"}`,
-        monto: deuda.monto,
-        negocio_id: deuda.negocio_id,
-        categoria: "Pago de deuda",
-      }]);
-    }
+    const nuevoPagado = Number(deuda.monto_pagado) + abono;
+    const saldoRestante = Number(deuda.monto) - nuevoPagado;
+    const nuevoEstado = saldoRestante <= 0 ? "pagado" : "pendiente";
+    const nuevoMonto = saldoRestante <= 0 ? deuda.monto : Number(deuda.monto);
 
+    await supabase.from("deudas").update({
+      monto_pagado: nuevoPagado,
+      estado: nuevoEstado,
+    }).eq("id", deuda.id);
+
+    await supabase.from("transacciones_financieras").insert([{
+      tipo: "recaudo",
+      descripcion: `Abono deuda: ${deuda.concepto || "retiro personal"}`,
+      monto: abono,
+      negocio_id: deuda.negocio_id,
+      categoria: "Abono de deuda",
+    }]);
+
+    setAbonando(null);
+    setMontoAbono("");
     fetchDeudas();
   }
 
@@ -90,13 +102,13 @@ export default function Deudas() {
   const formatoCOP = (n) =>
     new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n || 0);
 
-  const totalPendiente = deudas.filter(d => d.estado === "pendiente").reduce((acc, d) => acc + Number(d.monto), 0);
+  const totalPendiente = deudas.filter(d => d.estado === "pendiente").reduce((acc, d) => acc + Number(d.monto) - Number(d.monto_pagado), 0);
 
   const resumenPorNegocio = {};
   negocios.forEach(n => resumenPorNegocio[n.id] = { nombre: n.nombre, total: 0 });
   deudas.filter(d => d.estado === "pendiente").forEach(d => {
     if (resumenPorNegocio[d.negocio_id]) {
-      resumenPorNegocio[d.negocio_id].total += Number(d.monto);
+      resumenPorNegocio[d.negocio_id].total += Number(d.monto) - Number(d.monto_pagado);
     }
   });
 
@@ -113,13 +125,11 @@ export default function Deudas() {
       <h1 className="text-2xl font-bold text-gray-800 mb-1">Deudas a mis negocios</h1>
       <p className="text-gray-500 mb-6">Plata que retiras de los negocios y debes devolver al hacer inventario</p>
 
-      {/* Total general */}
       <div className="bg-white rounded-xl shadow p-4 border-l-4 border-red-500 mb-4">
         <p className="text-sm text-gray-500">Total que debes a todos tus negocios</p>
         <p className="text-2xl font-bold text-red-600">{formatoCOP(totalPendiente)}</p>
       </div>
 
-      {/* Resumen por negocio - tarjetas filtrables */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <button
           onClick={() => setFiltroNegocio("todos")}
@@ -140,7 +150,6 @@ export default function Deudas() {
         ))}
       </div>
 
-      {/* Formulario */}
       <div className="bg-white rounded-xl shadow p-4 mb-6 space-y-3">
         <p className="font-semibold text-gray-700">Registrar retiro</p>
         <select value={negocioId} onChange={(e) => setNegocioId(e.target.value)} className="w-full border rounded-lg px-3 py-2">
@@ -155,7 +164,6 @@ export default function Deudas() {
         </button>
       </div>
 
-      {/* Lista pendientes */}
       <h2 className="font-semibold text-gray-700 mb-2">
         Pendientes {filtroNegocio !== "todos" ? `— ${resumenPorNegocio[filtroNegocio]?.nombre}` : ""}
       </h2>
@@ -165,26 +173,52 @@ export default function Deudas() {
         <p className="text-gray-400 text-sm mb-6">No hay retiros pendientes.</p>
       ) : (
         <div className="space-y-2 mb-6">
-          {pendientesFiltradas.map(d => (
-            <div key={d.id} className="bg-white rounded-xl shadow p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{d.negocios?.nombre}</span>
-                <span className="text-xs text-gray-400">{new Date(d.fecha).toLocaleDateString("es-CO")}</span>
-              </div>
-              <p className="text-sm text-gray-600 mb-2">{d.concepto || "Sin descripción"}</p>
-              <div className="flex items-center justify-between">
-                <p className="font-bold text-red-600">{formatoCOP(d.monto)}</p>
-                <div className="flex gap-3">
-                  <button onClick={() => marcarPagado(d.id)} className="text-sm text-green-600 hover:underline">Pagado ✓</button>
-                  <button onClick={() => eliminar(d.id)} className="text-sm text-red-500 hover:underline">Eliminar</button>
+          {pendientesFiltradas.map(d => {
+            const saldo = Number(d.monto) - Number(d.monto_pagado);
+            return (
+              <div key={d.id} className="bg-white rounded-xl shadow p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{d.negocios?.nombre}</span>
+                  <span className="text-xs text-gray-400">{new Date(d.fecha).toLocaleDateString("es-CO")}</span>
                 </div>
+                <p className="text-sm text-gray-600 mb-1">{d.concepto || "Sin descripción"}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="font-bold text-red-600">{formatoCOP(saldo)} <span className="text-xs text-gray-400">saldo</span></p>
+                    {Number(d.monto_pagado) > 0 && (
+                      <p className="text-xs text-gray-400">Abonado: {formatoCOP(d.monto_pagado)} de {formatoCOP(d.monto)}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => { setAbonando(d.id); setMontoAbono(""); }} className="text-sm text-green-600 hover:underline">Abonar</button>
+                    <button onClick={() => eliminar(d.id)} className="text-sm text-red-500 hover:underline">Eliminar</button>
+                  </div>
+                </div>
+
+                {abonando === d.id && (
+                  <div className="border-t pt-3 space-y-2">
+                    <p className="text-sm text-gray-600">¿Cuánto vas a abonar? (máx. {formatoCOP(saldo)})</p>
+                    <input
+                      type="number"
+                      placeholder="Monto del abono"
+                      value={montoAbono}
+                      onChange={(e) => setMontoAbono(e.target.value)}
+                      className="w-full border rounded-lg px-3 py-2 text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={() => confirmarAbono(d)} className="flex-1 bg-green-600 text-white py-1.5 rounded-lg text-sm">
+                        Confirmar abono
+                      </button>
+                      <button onClick={() => setAbonando(null)} className="text-sm text-gray-500">Cancelar</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Lista pagados */}
       {pagadosFiltrados.length > 0 && (
         <>
           <h2 className="font-semibold text-gray-700 mb-2">Pagados</h2>
