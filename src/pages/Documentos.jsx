@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Folder, FileText, Image, Plus, Trash2, Upload, ChevronLeft, Download } from "lucide-react";
 
@@ -88,7 +88,6 @@ export default function Documentos() {
   async function exportarPDF() {
     setExportando(true);
     try {
-      // Cargar jsPDF dinámicamente
       const script = document.createElement("script");
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
       document.head.appendChild(script);
@@ -128,7 +127,6 @@ export default function Documentos() {
 
       // Documentos
       for (const doc of documentos) {
-        // Verificar si necesita nueva página
         if (y > 250) { pdf.addPage(); y = 20; }
 
         // Nombre del documento
@@ -142,8 +140,8 @@ export default function Documentos() {
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(150, 150, 150);
-        const tipoLabel = doc.tipo === "imagen" ? "🖼 Imagen" : doc.tipo === "pdf" ? "📄 PDF" : "📝 Nota";
-        pdf.text(`${tipoLabel}  •  ${new Date(doc.created_at).toLocaleDateString("es-CO")}`, margin, y);
+        const tipoLabel = doc.tipo === "imagen" ? "Imagen" : doc.tipo === "pdf" ? "Archivo PDF" : "Nota";
+        pdf.text(`${tipoLabel}  |  ${new Date(doc.created_at).toLocaleDateString("es-CO")}`, margin, y);
         y += 6;
 
         // Observación
