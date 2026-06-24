@@ -21,9 +21,7 @@ export default function Recordatorios() {
   const notifDisponible = typeof window !== "undefined" && "Notification" in window;
 
   useEffect(() => {
-    if (notifDisponible) {
-      setNotifPermiso(Notification.permission);
-    }
+    if (notifDisponible) setNotifPermiso(Notification.permission);
     fetchRecordatorios();
     fetchNegocios();
   }, []);
@@ -42,34 +40,22 @@ export default function Recordatorios() {
       const f = new Date(r.fecha_vencimiento);
       f.setHours(0, 0, 0, 0);
       const dias = Math.round((f - hoy) / (1000 * 60 * 60 * 24));
-      if (dias < 0) {
-        new Notification("Recordatorio vencido", { body: `"${r.titulo}" venció hace ${Math.abs(dias)} día(s)` });
-      } else if (dias === 0) {
-        new Notification("Vence HOY", { body: `"${r.titulo}" vence hoy` });
-      } else if (dias <= 3) {
-        new Notification("Próximo a vencer", { body: `"${r.titulo}" vence en ${dias} día(s)` });
-      }
+      if (dias < 0) new Notification("Recordatorio vencido", { body: `"${r.titulo}" venció hace ${Math.abs(dias)} día(s)` });
+      else if (dias === 0) new Notification("Vence HOY", { body: `"${r.titulo}" vence hoy` });
+      else if (dias <= 3) new Notification("Próximo a vencer", { body: `"${r.titulo}" vence en ${dias} día(s)` });
     });
   }
 
   async function activarNotificaciones() {
-    if (!notifDisponible) {
-      alert("Tu navegador no soporta notificaciones.");
-      return;
-    }
+    if (!notifDisponible) { alert("Tu navegador no soporta notificaciones."); return; }
     const permiso = await Notification.requestPermission();
     setNotifPermiso(permiso);
-    if (permiso === "granted") {
-      new Notification("Notificaciones activadas", { body: "Centro de Mando te avisará cuando algo venza." });
-    }
+    if (permiso === "granted") new Notification("Notificaciones activadas", { body: "Centro de Mando te avisará cuando algo venza." });
   }
 
   async function fetchRecordatorios() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("recordatorios")
-      .select("*, negocios(nombre)")
-      .order("fecha_vencimiento", { ascending: true });
+    const { data, error } = await supabase.from("recordatorios").select("*, negocios(nombre)").order("fecha_vencimiento", { ascending: true });
     if (!error) setRecordatorios(data);
     setLoading(false);
   }
@@ -101,14 +87,14 @@ export default function Recordatorios() {
       let month = parseInt(partes[1], 10);
       let day = parseInt(partes[2], 10);
       if (r.frecuencia === "Semanal") {
-        const fechaBase = new Date(year, month - 1, day);
-        fechaBase.setDate(fechaBase.getDate() + 7);
-        year = fechaBase.getFullYear(); month = fechaBase.getMonth() + 1; day = fechaBase.getDate();
+        const fb = new Date(year, month - 1, day);
+        fb.setDate(fb.getDate() + 7);
+        year = fb.getFullYear(); month = fb.getMonth() + 1; day = fb.getDate();
       } else if (r.frecuencia === "Mensual") {
         month += 1;
         if (month > 12) { month = 1; year += 1; }
-        const ultimoDia = new Date(year, month, 0).getDate();
-        if (day > ultimoDia) day = ultimoDia;
+        const ult = new Date(year, month, 0).getDate();
+        if (day > ult) day = ult;
       } else if (r.frecuencia === "Anual") { year += 1; }
       const pad = (n) => String(n).padStart(2, "0");
       await supabase.from("recordatorios").insert([{
