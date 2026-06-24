@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabaseClient";
-import { Folder, FileText, Image, Plus, Trash2, Upload, ChevronLeft } from "lucide-react";
+import { Folder, FileText, Image, Plus, Trash2, Upload, ChevronLeft, Download } from "lucide-react";
 
 export default function Documentos() {
   const [carpetas, setCarpetas] = useState([]);
@@ -15,6 +15,7 @@ export default function Documentos() {
   const [archivo, setArchivo] = useState(null);
   const [subiendo, setSubiendo] = useState(false);
   const [mostrarFormDoc, setMostrarFormDoc] = useState(false);
+  const [exportando, setExportando] = useState(false);
 
   useEffect(() => { fetchCarpetas(); }, []);
   useEffect(() => { if (carpetaActiva) fetchDocumentos(carpetaActiva.id); }, [carpetaActiva]);
@@ -84,12 +85,137 @@ export default function Documentos() {
     fetchDocumentos(carpetaActiva.id);
   }
 
+  async function exportarPDF() {
+    setExportando(true);
+    try {
+      // Cargar jsPDF dinámicamente
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      document.head.appendChild(script);
+      await new Promise((res) => { script.onload = res; });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = 210;
+      const margin = 15;
+      const contentW = pageW - margin * 2;
+      let y = 20;
+
+      // Título de la carpeta
+      pdf.setFontSize(20);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(30, 30, 30);
+      pdf.text(carpetaActiva.nombre, margin, y);
+      y += 8;
+
+      if (carpetaActiva.descripcion) {
+        pdf.setFontSize(11);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(120, 120, 120);
+        pdf.text(carpetaActiva.descripcion, margin, y);
+        y += 6;
+      }
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(160, 160, 160);
+      pdf.text(`Exportado el ${new Date().toLocaleDateString("es-CO")}`, margin, y);
+      y += 10;
+
+      // Línea separadora
+      pdf.setDrawColor(220, 220, 220);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 10;
+
+      // Documentos
+      for (const doc of documentos) {
+        // Verificar si necesita nueva página
+        if (y > 250) { pdf.addPage(); y = 20; }
+
+        // Nombre del documento
+        pdf.setFontSize(13);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(30, 30, 30);
+        pdf.text(doc.nombre, margin, y);
+        y += 6;
+
+        // Tipo y fecha
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(150, 150, 150);
+        const tipoLabel = doc.tipo === "imagen" ? "🖼 Imagen" : doc.tipo === "pdf" ? "📄 PDF" : "📝 Nota";
+        pdf.text(`${tipoLabel}  •  ${new Date(doc.created_at).toLocaleDateString("es-CO")}`, margin, y);
+        y += 6;
+
+        // Observación
+        if (doc.observacion) {
+          pdf.setFontSize(10);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(80, 80, 80);
+          const lines = pdf.splitTextToSize(doc.observacion, contentW);
+          pdf.text(lines, margin, y);
+          y += lines.length * 5 + 2;
+        }
+
+        // Imagen
+        if (doc.url && doc.tipo === "imagen") {
+          try {
+            const imgData = await fetchImageAsBase64(doc.url);
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgH = (imgProps.height * contentW) / imgProps.width;
+            const maxH = 80;
+            const finalH = Math.min(imgH, maxH);
+            const finalW = (finalH / imgH) * contentW;
+
+            if (y + finalH > 270) { pdf.addPage(); y = 20; }
+            pdf.addImage(imgData, "JPEG", margin, y, finalW, finalH);
+            y += finalH + 6;
+          } catch (e) {
+            pdf.setFontSize(9);
+            pdf.setTextColor(200, 100, 100);
+            pdf.text("(No se pudo cargar la imagen)", margin, y);
+            y += 6;
+          }
+        }
+
+        // Separador entre documentos
+        pdf.setDrawColor(235, 235, 235);
+        pdf.line(margin, y, pageW - margin, y);
+        y += 8;
+      }
+
+      pdf.save(`${carpetaActiva.nombre}.pdf`);
+    } catch (e) {
+      alert("Error al exportar. Intenta de nuevo.");
+    }
+    setExportando(false);
+  }
+
+  async function fetchImageAsBase64(url) {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
   if (carpetaActiva) {
     return (
       <div>
-        <button onClick={() => { setCarpetaActiva(null); setDocumentos([]); setMostrarFormDoc(false); }} className="flex items-center gap-1 text-sm text-gray-500 mb-4 hover:text-gray-800">
-          <ChevronLeft size={16} /> Volver a carpetas
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => { setCarpetaActiva(null); setDocumentos([]); setMostrarFormDoc(false); }} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800">
+            <ChevronLeft size={16} /> Volver a carpetas
+          </button>
+          <button
+            onClick={exportarPDF}
+            disabled={exportando || documentos.length === 0}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-40"
+          >
+            <Download size={16} /> {exportando ? "Generando PDF..." : "Exportar como PDF"}
+          </button>
+        </div>
 
         <h1 className="text-2xl font-bold text-gray-800 mb-1">{carpetaActiva.nombre}</h1>
         {carpetaActiva.descripcion && <p className="text-gray-500 mb-4">{carpetaActiva.descripcion}</p>}
