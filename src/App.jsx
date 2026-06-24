@@ -8,6 +8,7 @@ import Finanzas from "./pages/Finanzas";
 import Recordatorios from "./pages/Recordatorios";
 import Bandeja from "./pages/Bandeja";
 import Deudas from "./pages/Deudas";
+import Documentos from "./pages/Documentos";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="recordatorios" element={<Recordatorios />} />
         <Route path="bandeja" element={<Bandeja />} />
         <Route path="deudas" element={<Deudas />} />
+        <Route path="documentos" element={<Documentos />} />
       </Route>
     </Routes>
   );
