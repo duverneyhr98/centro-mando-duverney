@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 
+const hoyStr = () => new Date().toISOString().split("T")[0];
+
 export default function Deudas() {
   const [pestana, setPestana] = useState("retiros");
   const [deudas, setDeudas] = useState([]);
@@ -11,19 +13,17 @@ export default function Deudas() {
   const [abonando, setAbonando] = useState(null);
   const [montoAbono, setMontoAbono] = useState("");
 
-  // Formulario retiros
   const [negocioId, setNegocioId] = useState("");
   const [monto, setMonto] = useState("");
   const [concepto, setConcepto] = useState("");
-  const [fecha, setFecha] = useState("");
+  const [fecha, setFecha] = useState(hoyStr());
   const [origen, setOrigen] = useState("efectivo");
 
-  // Formulario préstamos
   const [prestPersona, setPrestPersona] = useState("");
   const [prestNegocioId, setPrestNegocioId] = useState("");
   const [prestMonto, setPrestMonto] = useState("");
   const [prestConcepto, setPrestConcepto] = useState("");
-  const [prestFecha, setPrestFecha] = useState("");
+  const [prestFecha, setPrestFecha] = useState(hoyStr());
 
   const [enviando, setEnviando] = useState(false);
 
@@ -75,7 +75,6 @@ export default function Deudas() {
     }]);
 
     if (!error) {
-      // Solo afecta caja si fue en efectivo
       if (origen === "efectivo") {
         await supabase.from("transacciones_financieras").insert([{
           tipo: "gasto",
@@ -85,7 +84,7 @@ export default function Deudas() {
           categoria: "Retiro personal",
         }]);
       }
-      setNegocioId(""); setMonto(""); setConcepto(""); setFecha(""); setOrigen("efectivo");
+      setNegocioId(""); setMonto(""); setConcepto(""); setFecha(hoyStr()); setOrigen("efectivo");
       fetchDeudas();
     }
     setEnviando(false);
@@ -114,7 +113,7 @@ export default function Deudas() {
         negocio_id: prestNegocioId,
         categoria: "Préstamo recibido",
       }]);
-      setPrestPersona(""); setPrestNegocioId(""); setPrestMonto(""); setPrestConcepto(""); setPrestFecha("");
+      setPrestPersona(""); setPrestNegocioId(""); setPrestMonto(""); setPrestConcepto(""); setPrestFecha(hoyStr());
       fetchPrestamos();
     }
     setEnviando(false);
@@ -129,7 +128,6 @@ export default function Deudas() {
 
     await supabase.from("deudas").update({ monto_pagado: nuevoPagado, estado: nuevoEstado }).eq("id", deuda.id);
 
-    // Al abonar siempre entra en efectivo a la caja
     await supabase.from("transacciones_financieras").insert([{
       tipo: "recaudo",
       descripcion: `Abono ${esRetiro ? "retiro" : "préstamo"}: ${deuda.concepto || ""}`,
