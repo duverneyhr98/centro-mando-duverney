@@ -2,9 +2,9 @@ import { useState } from "react";
 import CapturaRapida from "../components/CapturaRapida";
 import { NavLink, Outlet } from "react-router-dom";
 import {
-  LayoutDashboard, Inbox, Lightbulb, CheckSquare, Calendar, Bell,
-  Wallet, Repeat, FileWarning, Package, Truck,
-  FolderOpen, Target, Bot, Settings, Building2, Menu, X
+  LayoutDashboard, Inbox, Lightbulb, CheckSquare, Bell,
+  Wallet, FileWarning, Package, Truck,
+  FolderOpen, Target, Building2, Menu, X
 } from "lucide-react";
 
 const sections = [
@@ -20,7 +20,6 @@ const sections = [
       { to: "/bandeja", label: "Bandeja", icon: Inbox },
       { to: "/ideas", label: "Ideas", icon: Lightbulb },
       { to: "/tareas", label: "Tareas", icon: CheckSquare },
-      { to: "/calendario", label: "Calendario", icon: Calendar },
       { to: "/recordatorios", label: "Recordatorios", icon: Bell },
     ],
   },
@@ -28,7 +27,6 @@ const sections = [
     title: "Finanzas",
     items: [
       { to: "/finanzas", label: "Finanzas", icon: Wallet },
-      { to: "/cruce-cuentas", label: "Cruce de Cuentas", icon: Repeat },
       { to: "/deudas", label: "Deudas", icon: FileWarning },
     ],
   },
@@ -45,8 +43,6 @@ const sections = [
     title: "Otros",
     items: [
       { to: "/metas", label: "Metas", icon: Target },
-      { to: "/asistente", label: "Asistente IA", icon: Bot },
-      { to: "/configuracion", label: "Configuración", icon: Settings },
     ],
   },
 ];
