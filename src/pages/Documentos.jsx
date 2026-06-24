@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { Folder, FileText, Image, Plus, X, ChevronLeft, Trash2, Upload } from "lucide-react";
+import { Folder, FileText, Image, Plus, Trash2, Upload, ChevronLeft } from "lucide-react";
 
 export default function Documentos() {
   const [carpetas, setCarpetas] = useState([]);
@@ -91,9 +91,7 @@ export default function Documentos() {
           <ChevronLeft size={16} /> Volver a carpetas
         </button>
 
-        <div className="flex items-center justify-between mb-1">
-          <h1 className="text-2xl font-bold text-gray-800">{carpetaActiva.nombre}</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">{carpetaActiva.nombre}</h1>
         {carpetaActiva.descripcion && <p className="text-gray-500 mb-4">{carpetaActiva.descripcion}</p>}
 
         <button onClick={() => setMostrarFormDoc(!mostrarFormDoc)} className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm mb-6">
@@ -132,12 +130,19 @@ export default function Documentos() {
                     <Trash2 size={16} />
                   </button>
                 </div>
+
                 {doc.observacion && <p className="text-sm text-gray-600 mb-2">{doc.observacion}</p>}
-                {doc.url && (
-                  <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+
+                {doc.url && doc.tipo === "imagen" && (
+                  <img src={doc.url} alt={doc.nombre} className="w-full rounded-lg mt-2 max-h-64 object-cover cursor-pointer" onClick={() => window.open(doc.url, "_blank")} />
+                )}
+
+                {doc.url && doc.tipo !== "imagen" && (
+                  <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-2">
                     <Upload size={14} /> Ver / Descargar archivo
                   </a>
                 )}
+
                 <p className="text-xs text-gray-400 mt-2">{new Date(doc.created_at).toLocaleDateString("es-CO")}</p>
               </div>
             ))}
