@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { Bell, BellOff } from "lucide-react";
 
 const CATEGORIAS = ["Banco", "Crédito", "Servicio", "Arriendo", "Nómina", "Proveedor", "Impuesto", "Otro"];
 const FRECUENCIAS = ["Única vez", "Semanal", "Mensual", "Anual"];
@@ -15,11 +16,57 @@ export default function Recordatorios() {
   const [negocioId, setNegocioId] = useState("");
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
+  const [notifPermiso, setNotifPermiso] = useState(Notification.permission);
 
   useEffect(() => {
     fetchRecordatorios();
     fetchNegocios();
   }, []);
+
+  useEffect(() => {
+    if (recordatorios.length > 0 && notifPermiso === "granted") {
+      verificarAlertas(recordatorios);
+    }
+  }, [recordatorios]);
+
+  function verificarAlertas(lista) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    lista.filter(r => r.estado === "pendiente").forEach(r => {
+      const f = new Date(r.fecha_vencimiento);
+      f.setHours(0, 0, 0, 0);
+      const dias = Math.round((f - hoy) / (1000 * 60 * 60 * 24));
+
+      if (dias < 0) {
+        new Notification("⚠️ Recordatorio vencido", {
+          body: `"${r.titulo}" venció hace ${Math.abs(dias)} día(s)`,
+          icon: "/favicon.ico",
+        });
+      } else if (dias === 0) {
+        new Notification("🔔 Vence HOY", {
+          body: `"${r.titulo}" vence hoy`,
+          icon: "/favicon.ico",
+        });
+      } else if (dias <= 3) {
+        new Notification("📅 Próximo a vencer", {
+          body: `"${r.titulo}" vence en ${dias} día(s)`,
+          icon: "/favicon.ico",
+        });
+      }
+    });
+  }
+
+  async function activarNotificaciones() {
+    const permiso = await Notification.requestPermission();
+    setNotifPermiso(permiso);
+    if (permiso === "granted") {
+      new Notification("✅ Notificaciones activadas", {
+        body: "Centro de Mando te avisará cuando algo venza.",
+        icon: "/favicon.ico",
+      });
+    }
+  }
 
   async function fetchRecordatorios() {
     setLoading(true);
@@ -84,7 +131,7 @@ export default function Recordatorios() {
       const pad = (n) => String(n).padStart(2, "0");
       const fechaStr = `${year}-${pad(month)}-${pad(day)}`;
 
-      const { error } = await supabase.from("recordatorios").insert([{
+      await supabase.from("recordatorios").insert([{
         titulo: r.titulo,
         categoria: r.categoria,
         monto: r.monto,
@@ -93,10 +140,6 @@ export default function Recordatorios() {
         negocio_id: r.negocio_id,
         estado: "pendiente",
       }]);
-
-      if (error) {
-        alert("Error al crear el siguiente recordatorio: " + error.message);
-      }
     }
 
     fetchRecordatorios();
@@ -128,7 +171,21 @@ export default function Recordatorios() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-1">Recordatorios</h1>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-2xl font-bold text-gray-800">Recordatorios</h1>
+        {notifPermiso === "granted" ? (
+          <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-1 rounded-full">
+            <Bell size={14} /> Notificaciones activas
+          </div>
+        ) : (
+          <button
+            onClick={activarNotificaciones}
+            className="flex items-center gap-2 text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
+          >
+            <Bell size={14} /> Activar alertas
+          </button>
+        )}
+      </div>
       <p className="text-gray-500 mb-6">Bancos, créditos, proveedores y pagos personales</p>
 
       <div className="bg-white rounded-xl shadow p-4 mb-6 space-y-3">
