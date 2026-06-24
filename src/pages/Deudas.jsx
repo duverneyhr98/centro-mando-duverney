@@ -35,7 +35,9 @@ export default function Deudas() {
   async function agregarDeuda() {
     if (!negocioId || !monto || !fecha || enviando) return;
     setEnviando(true);
-    const { error } = await supabase.from("deudas").insert([{
+
+    // Registrar la deuda
+    const { error: errorDeuda } = await supabase.from("deudas").insert([{
       tipo: "negocio",
       negocio_id: negocioId,
       monto: parseFloat(monto),
@@ -44,7 +46,17 @@ export default function Deudas() {
       fecha,
       estado: "pendiente",
     }]);
-    if (!error) {
+
+    if (!errorDeuda) {
+      // También registrar como gasto en Finanzas
+      await supabase.from("transacciones_financieras").insert([{
+        tipo: "gasto",
+        descripcion: concepto || "Retiro personal del negocio",
+        monto: parseFloat(monto),
+        negocio_id: negocioId,
+        categoria: "Retiro personal",
+      }]);
+
       setNegocioId("");
       setMonto("");
       setConcepto("");
@@ -55,7 +67,20 @@ export default function Deudas() {
   }
 
   async function marcarPagado(id) {
-    await supabase.from("deudas").update({ estado: "pagado", monto_pagado: deudas.find(d => d.id === id)?.monto }).eq("id", id);
+    const deuda = deudas.find(d => d.id === id);
+    await supabase.from("deudas").update({ estado: "pagado", monto_pagado: deuda?.monto }).eq("id", id);
+
+    // Registrar el pago como recaudo en Finanzas
+    if (deuda) {
+      await supabase.from("transacciones_financieras").insert([{
+        tipo: "recaudo",
+        descripcion: `Pago de deuda: ${deuda.concepto || "retiro personal"}`,
+        monto: deuda.monto,
+        negocio_id: deuda.negocio_id,
+        categoria: "Pago de deuda",
+      }]);
+    }
+
     fetchDeudas();
   }
 
@@ -68,7 +93,6 @@ export default function Deudas() {
     new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n || 0);
 
   const totalPendiente = deudas.filter(d => d.estado === "pendiente").reduce((acc, d) => acc + Number(d.monto), 0);
-
   const pendientes = deudas.filter(d => d.estado === "pendiente");
   const pagados = deudas.filter(d => d.estado === "pagado");
 
@@ -117,7 +141,7 @@ export default function Deudas() {
           disabled={enviando}
           className="w-full bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-800 disabled:opacity-50"
         >
-          Registrar retiro
+          {enviando ? "Registrando..." : "Registrar retiro"}
         </button>
       </div>
 
@@ -139,7 +163,7 @@ export default function Deudas() {
                 <p className="font-bold text-red-600">{formatoCOP(d.monto)}</p>
                 <div className="flex gap-3">
                   <button onClick={() => marcarPagado(d.id)} className="text-sm text-green-600 hover:underline">
-                    Pagado al hacer inventario
+                    Pagado ✓
                   </button>
                   <button onClick={() => eliminar(d.id)} className="text-sm text-red-500 hover:underline">
                     Eliminar
